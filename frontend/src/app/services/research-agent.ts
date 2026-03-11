@@ -12,7 +12,7 @@ export interface AgentStep {
   providedIn: 'root'
 })
 export class ResearchAgentService {
-  private apiUrl = 'http://localhost:3000/api/research';
+private apiUrl = 'https://empathetic-cooperation-production.up.railway.app/api/research';
 
   research(topic: string): Observable<AgentStep> {
     return new Observable(observer => {
