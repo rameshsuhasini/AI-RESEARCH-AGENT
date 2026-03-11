@@ -1,0 +1,78 @@
+<div class="app-wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-accent"></div>
+    <div class="header-text">
+      <h1>🤖 AI Research Agent</h1>
+      <p>Enter any topic and watch the agent autonomously research, analyze and report</p>
+      <div class="badge">claude-powered · multi-step agent</div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-section">
+    <div class="search-box">
+      <input
+        [(ngModel)]="topic"
+        placeholder="e.g. AI trends in Germany, climate tech startups..."
+        [disabled]="isRunning"
+      />
+      <button
+        class="btn-research"
+        (click)="startResearch()"
+        [disabled]="isRunning || !topic"
+      >
+        <div class="spinner" *ngIf="isRunning"></div>
+        {{ isRunning ? 'Researching...' : 'Research' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps-section" *ngIf="steps.length > 0">
+
+    <div class="steps-header">
+      <span>Agent Activity</span>
+    </div>
+
+    <div class="steps-list">
+      <div *ngFor="let step of steps"
+           [class]="'step step-' + step.type">
+
+        <!-- Thinking -->
+        <div *ngIf="step.type === 'thinking'" class="thinking-content">
+          <span class="step-icon">💭</span>
+          <span class="thinking-text">{{ step.content }}</span>
+        </div>
+
+        <!-- Tool call -->
+        <div *ngIf="step.type === 'tool_call'" class="tool-call-content">
+          <span class="step-icon">🔧</span>
+          <span class="tool-name">{{ step.toolName }}</span>
+          <span class="tool-arrow">→</span>
+          <span class="tool-query">"{{ step.input?.['query'] }}"</span>
+        </div>
+
+        <!-- Tool result -->
+        <div *ngIf="step.type === 'tool_result'" class="tool-result-content">
+          <span class="step-icon">✅</span>
+          <span class="result-label">{{ step.toolName }}</span>
+          <span class="result-text">returned results</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Done -->
+    <div class="done-card" *ngIf="isDone">
+      <div class="done-icon">✨</div>
+      <div>
+        <div class="done-title">Research Complete</div>
+        <div class="done-sub">Agent completed {{ steps.length }} steps autonomously</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
