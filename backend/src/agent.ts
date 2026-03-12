@@ -1,9 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import * as dotenv from "dotenv";
 dotenv.config();
+import { tavily } from "@tavily/core";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+const tavilyClient = tavily({ 
+  apiKey: process.env.TAVILY_API_KEY || "" 
 });
 
 const tools: Anthropic.Tool[] = [
@@ -64,13 +69,31 @@ const tools: Anthropic.Tool[] = [
   },
 ];
 
-function executeTool(name: string, input: Record<string, string>): string {
+async function executeTool(
+  name: string,
+  input: Record<string, string>
+): Promise<string> {
   switch (name) {
     case "search_web":
-      return `Search results for "${input["query"]}": Found relevant information about ${input["query"]} covering recent developments and practical applications.`;
+      try {
+        const response = await tavilyClient.search(input["query"], {
+          searchDepth: "basic",
+          maxResults: 5,
+        });
+        
+        const results = response.results
+          .map((r: { title: string; content: string; url: string }) => 
+            `Title: ${r.title}\nContent: ${r.content}\nSource: ${r.url}`
+          )
+          .join("\n\n");
+          
+        return results || "No results found.";
+      } catch (error) {
+        return `Search failed for "${input["query"]}"`;
+      }
 
     case "analyze_content":
-      return `Analysis complete focusing on "${input["focus"]}": Three key themes identified with supporting evidence.`;
+      return `Analysis complete focusing on "${input["focus"]}": Key themes identified with supporting evidence from search results.`;
 
     case "draft_report":
       return `Report "${input["title"]}" drafted with findings and conclusions structured clearly.`;
@@ -87,10 +110,12 @@ export async function runResearchAgent(
   const messages: Anthropic.MessageParam[] = [
     {
       role: "user",
-      content: `Research this topic thoroughly: "${topic}".
+      content: `Today's date is ${new Date().toDateString()}.
+       Research this topic thoroughly: "${topic}".
       Use your search tool multiple times from different angles.
+      Always search for the most current and recent information available.
       Analyze what you find. Then draft a clear final report.
-      Think step by step.`,
+      Think and display the result step by step.`,
     },
   ];
   let continueLoop = true;
@@ -121,7 +146,7 @@ export async function runResearchAgent(
           input,
         });
 
-        const result = executeTool(block.name, input);
+        const result = await executeTool(block.name, input);
 
         onStep({
           type: "tool_result",

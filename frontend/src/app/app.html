@@ -1,78 +1,188 @@
 <div class="app-wrapper">
-
-  <!-- Header -->
-  <div class="header">
+  <header class="header">
     <div class="header-accent"></div>
     <div class="header-text">
-      <h1>🤖 AI Research Agent</h1>
-      <p>Enter any topic and watch the agent autonomously research, analyze and report</p>
-      <div class="badge">claude-powered · multi-step agent</div>
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="url(#grad)" />
+          <path
+            d="M8 16h4l3-6 4 12 3-8 2 2h4"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <defs>
+            <linearGradient id="grad" x1="0" y1="0" x2="32" y2="32">
+              <stop offset="0%" stop-color="#7c6af7" />
+              <stop offset="100%" stop-color="#4facfe" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="logo-text">ResearchAI</span>
+      </div>
+      <p class="tagline">
+        Autonomous research powered by Claude · Enter any topic and watch AI work
+      </p>
     </div>
-  </div>
+  </header>
 
   <!-- Search -->
   <div class="search-section">
-    <div class="search-box">
+    <div class="search-box" [class.active]="isRunning">
+      <svg
+        class="search-icon"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.35-4.35" />
+      </svg>
       <input
         [(ngModel)]="topic"
-        placeholder="e.g. AI trends in Germany, climate tech startups..."
+        placeholder="e.g. AI trends in Germany, quantum computing, climate tech..."
         [disabled]="isRunning"
+        (keydown.enter)="!isRunning && topic && startResearch()"
       />
-      <button
-        class="btn-research"
-        (click)="startResearch()"
-        [disabled]="isRunning || !topic"
-      >
+      <button class="btn-research" (click)="startResearch()" [disabled]="isRunning || !topic">
         <div class="spinner" *ngIf="isRunning"></div>
+        <svg
+          *ngIf="!isRunning"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+        >
+          <path d="M5 12h14M12 5l7 7-7 7" />
+        </svg>
         {{ isRunning ? 'Researching...' : 'Research' }}
+      </button>
+    </div>
+    <div class="search-hints" *ngIf="!isRunning && steps.length === 0">
+      <span>Try:</span>
+      <button class="hint" (click)="setTopic('AI startups in Berlin 2025')">
+        AI startups in Berlin
+      </button>
+      <button class="hint" (click)="setTopic('Latest breakthroughs in quantum computing')">
+        Quantum computing
+      </button>
+      <button class="hint" (click)="setTopic('Remote work trends in Europe')">
+        Remote work Europe
       </button>
     </div>
   </div>
 
-  <!-- Steps -->
-  <div class="steps-section" *ngIf="steps.length > 0">
+  <!-- Main content -->
+  <div class="main-content" *ngIf="steps.length > 0">
+    <!-- Agent activity window -->
+    <div class="activity-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <div class="live-dot" [class.active]="isRunning"></div>
+          <span>Agent Activity</span>
+        </div>
+        <div class="step-counter">{{ steps.length }} steps</div>
+      </div>
 
-    <div class="steps-header">
-      <span>Agent Activity</span>
-    </div>
+      <div class="activity-scroll" #scrollContainer>
+        <div *ngFor="let step of steps; let i = index" [class]="'step step-' + step.type">
+          <div class="step-number">{{ i + 1 }}</div>
 
-    <div class="steps-list">
-      <div *ngFor="let step of steps"
-           [class]="'step step-' + step.type">
+          <!-- Thinking -->
+          <div *ngIf="step.type === 'thinking'" class="step-body">
+            <div class="step-tag tag-thinking">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 
+               10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
+                />
+              </svg>
+              Thinking
+            </div>
+            <div
+              class="step-text thinking-text"
+              [innerHTML]="formatContent(step.content || '')"
+            ></div>
+          </div>
 
-        <!-- Thinking -->
-        <div *ngIf="step.type === 'thinking'" class="thinking-content">
-          <span class="step-icon">💭</span>
-          <span class="thinking-text">{{ step.content }}</span>
+          <!-- Tool call -->
+          <div *ngIf="step.type === 'tool_call'" class="step-body">
+            <div class="step-tag tag-search">
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              Searching
+            </div>
+            <p class="step-text">
+              <span class="query-text">"{{ step.input?.['query'] }}"</span>
+            </p>
+          </div>
+
+          <!-- Tool result -->
+          <!-- Tool result -->
+          <div *ngIf="step.type === 'tool_result'" class="step-body">
+            <div class="step-tag tag-result">
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Results found
+            </div>
+            <div
+              class="step-text result-preview"
+              [innerHTML]="formatContent(step.content || '')"
+            ></div>
+          </div>
         </div>
 
-        <!-- Tool call -->
-        <div *ngIf="step.type === 'tool_call'" class="tool-call-content">
-          <span class="step-icon">🔧</span>
-          <span class="tool-name">{{ step.toolName }}</span>
-          <span class="tool-arrow">→</span>
-          <span class="tool-query">"{{ step.input?.['query'] }}"</span>
+        <!-- Typing indicator -->
+        <div class="typing-indicator" *ngIf="isRunning">
+          <span></span><span></span><span></span>
         </div>
-
-        <!-- Tool result -->
-        <div *ngIf="step.type === 'tool_result'" class="tool-result-content">
-          <span class="step-icon">✅</span>
-          <span class="result-label">{{ step.toolName }}</span>
-          <span class="result-text">returned results</span>
-        </div>
-
       </div>
     </div>
 
-    <!-- Done -->
+    <!-- Done card -->
     <div class="done-card" *ngIf="isDone">
-      <div class="done-icon">✨</div>
-      <div>
-        <div class="done-title">Research Complete</div>
-        <div class="done-sub">Agent completed {{ steps.length }} steps autonomously</div>
+      <div class="done-left">
+        <div class="done-icon">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <div>
+          <div class="done-title">Research Complete</div>
+          <div class="done-sub">Claude completed {{ steps.length }} autonomous steps</div>
+        </div>
       </div>
+      <button class="btn-new" (click)="reset()">New Research</button>
     </div>
-
   </div>
-
 </div>
