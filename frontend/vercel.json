@@ -1,5 +1,5 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/frontend",
+  "outputDirectory": "ist/ai-research-ui/browser",
   "framework": "angular"
 }
