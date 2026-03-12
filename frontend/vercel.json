@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/fronted/browser",
+  "framework": "angular"
+}
