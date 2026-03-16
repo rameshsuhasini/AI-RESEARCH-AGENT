@@ -2,10 +2,16 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 export interface AgentStep {
-  type: 'thinking' | 'tool_call' | 'tool_result' | 'done';
+  type: 'thinking' | 'tool_call' | 'tool_result' | 'report' | 'done' | 'error';
   content?: string;
   toolName?: string;
   input?: Record<string, string>;
+  report?: {
+    title: string;
+    summary: string;
+    findings: string[];
+    sources: string[];
+  };
 }
 
 @Injectable({

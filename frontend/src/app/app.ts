@@ -1,4 +1,10 @@
-import { Component, ChangeDetectorRef, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import {
+  Component,
+  ChangeDetectorRef,
+  ViewChild,
+  ElementRef,
+  AfterViewChecked,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ResearchAgentService, AgentStep } from './services/research-agent';
@@ -8,11 +14,12 @@ import { ResearchAgentService, AgentStep } from './services/research-agent';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
 })
 export class AppComponent implements AfterViewChecked {
   topic = '';
   steps: AgentStep[] = [];
+  report: AgentStep['report'] | null = null;
   isRunning = false;
   isDone = false;
   private shouldScroll = false;
@@ -21,7 +28,7 @@ export class AppComponent implements AfterViewChecked {
 
   constructor(
     private agentService: ResearchAgentService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngAfterViewChecked() {
@@ -44,30 +51,20 @@ export class AppComponent implements AfterViewChecked {
 
   reset() {
     this.steps = [];
+    this.report = null;
     this.isDone = false;
     this.topic = '';
   }
 
-  formatContent(text: string): string {
-  return text
-    // Bold
-    .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#c0c0e0">$1</strong>')
-    // Headers
-    .replace(/###\s*(.*?)(\n|$)/g, 
-      '<div style="color:#7c6af7;font-weight:700;font-size:12px;margin:8px 0 4px">$1</div>')
-    // Numbered lists  
-    .replace(/^\d+\.\s/gm, 
-      '<br><span style="color:#4facfe;font-weight:600">→ </span>')
-    // Bullet points
-    .replace(/^[-–]\s/gm, 
-      '<br><span style="color:#4facfe">• </span>')
-    // Line breaks
-    .replace(/\n/g, '<br>');
-}
+  // Only keep activity steps — filter out report and done
+  get activitySteps(): AgentStep[] {
+    return this.steps.filter((s) => s.type !== 'report' && s.type !== 'done');
+  }
 
   startResearch() {
     if (!this.topic || this.isRunning) return;
     this.steps = [];
+    this.report = null;
     this.isDone = false;
     this.isRunning = true;
 
@@ -75,16 +72,24 @@ export class AppComponent implements AfterViewChecked {
       next: (step) => {
         this.steps = [...this.steps, step];
         this.shouldScroll = true;
+
+        // Extract report when it arrives
+        if (step.type === 'report' && step.report) {
+          this.report = { ...step.report };
+          console.log('Report received:', this.report);
+        }
+
         if (step.type === 'done') {
           this.isDone = true;
           this.isRunning = false;
         }
+
         this.cdr.detectChanges();
       },
       error: () => {
         this.isRunning = false;
         this.cdr.detectChanges();
-      }
+      },
     });
   }
 }
